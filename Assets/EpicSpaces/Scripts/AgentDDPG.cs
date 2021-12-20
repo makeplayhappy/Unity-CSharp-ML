@@ -1,20 +1,16 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class AgentDQN : MonoBehaviour
+public class AgentDDPG 
 {
-    Net_DQN net;
-    Net_DQN target_net;
-    float[,] bs;
-    int[] ba_idx;
-    float[] br;
-    float[,] bs1;
+    ActorNet_DDPG anet;
+    public CriticNet_DDPG cnet;
+    ActorNet_DDPG atgt_net;
+    CriticNet_DDPG ctgt_net;
 
     int batch_capacity;
     int batch_size;
-    int updater;
-    int input_size;
+    int updater ;
+    int input_size ;
     int hidden_size;
     int output_size;
     float learning_rate;
@@ -23,9 +19,16 @@ public class AgentDQN : MonoBehaviour
     float epsilon;
     float decay;
     float min_decay;
-    int bi;
-    int p;
-    public AgentDQN(int batch_capacity,
+    float b;
+
+    float[,] bs;
+    float[,] ba;
+    float[] br;
+    float[,] bs1;
+
+    int bi = 0;
+    int p = 0;
+    public AgentDDPG(int batch_capacity,
     int batch_size,
     int updater,
     int input_size,
@@ -36,12 +39,13 @@ public class AgentDQN : MonoBehaviour
     float gamma,
     float epsilon,
     float decay,
-    float min_decay)
-    
+    float min_decay,
+    float b)
     {
-        net = new Net_DQN(input_size, hidden_size, output_size, learning_rate);
-        target_net = new Net_DQN(input_size, hidden_size, output_size, learning_rate);
-
+        anet = new ActorNet_DDPG(input_size, hidden_size, output_size, learning_rate);
+        atgt_net = new ActorNet_DDPG(input_size, hidden_size,  output_size,  learning_rate);
+        cnet = new CriticNet_DDPG(input_size, output_size,  hidden_size,  learning_rate);
+        ctgt_net = new CriticNet_DDPG(input_size, output_size,  hidden_size,  learning_rate);
         this.batch_capacity = batch_capacity;
         this.batch_size = batch_size;
         this.updater = updater;
@@ -54,62 +58,30 @@ public class AgentDQN : MonoBehaviour
         this.epsilon = epsilon;
         this.decay = decay;
         this.min_decay = min_decay;
-
-        bs = new float[batch_capacity, input_size];
-        ba_idx = new int[batch_capacity];
+        this.b = b;
+        bs = new float[ batch_capacity,  input_size];
+        ba = new float[ batch_capacity,  output_size];
         br = new float[ batch_capacity];
         bs1 = new float[ batch_capacity,  input_size];
     }
-    public int Predict(float[,] s)
+    public float[,] Predict(float[,] s)
     {
-        int act_idx = 0;
-        /*if (Random.Range(0f, 1f) <  epsilon)
+       float[,]a= anet.Forward(s,  b);
+        float[,] a_noise=new float[a.GetLength(0), a.GetLength(1)];
+        for (int i = 0; i < a.GetLength(0); i++)
         {
-            act_idx = Random.Range(0,  output_size);
+            for (int j = 0; j < a.GetLength(1); j++)
+            {
+                a_noise[0, j] = a[i, j] +  epsilon * Mathf.Sqrt(-2.0f * Mathf.Log(Random.Range(0.0f, 1.0f))) * Mathf.Sin(2.0f * Mathf.PI * Random.Range(0.0f, 1.0f));
+                if (a_noise[i, 0] < - b)
+                    a_noise[i, 0] = - b;
+                else if (a_noise[i, 0] >  b)
+                    a_noise[i, 0] =  b;
+            }
         }
-        else
-        {
-            float[,] q = net.Forward(s);
-            int[] a_idx = maxi(q);
-            act_idx = a_idx[0];
-        }*/
-        float[,] q = net.Forward(s);
-        float[] softmax = new float[output_size];
-
-        float sumexp = 0;
-        for (int i = 0; i < output_size; i++)
-        {
-            sumexp += Mathf.Exp(q[0, i]);
-        }
-        for (int i = 0; i < output_size; i++)
-        {
-            softmax[i] = Mathf.Exp(q[0, i]) / sumexp;
-        }
-
-        float[] weightsum = new float[output_size];
-        
-        weightsum[0] = softmax[0];
-
-        for (int i = 1; i < output_size; i++)
-        {
-            weightsum[i] = weightsum[i - 1] + softmax[i];
-        }
-		for (int i = 0; i < output_size; i++)
-        {
-            weightsum[i] /= weightsum[output_size-1];
-        }
-        float r = Random.Range(0f, 1f);
-        for (int i = 0; i < output_size; i++) 
-		{
-			if(r<weightsum[i])
-			{
-				act_idx=i;
-				break;
-			}
-		}
-        return act_idx;
+        return a_noise;
     }
-    public float Train(float[,] s, int act_idx, float r)
+    public float Train(float[,] s, float[,] a, float r)
     {
         float loss = 0;
         if (bi !=  batch_capacity)
@@ -118,7 +90,10 @@ public class AgentDQN : MonoBehaviour
             {
                 bs[bi, j] = s[0, j];
             }
-            ba_idx[bi] = act_idx;
+            for (int j = 0; j <  output_size; j++)
+            {
+                ba[bi, j] = a[0, j];
+            }
             br[bi] = r;
         }
         for (int i = 0; i <  input_size; i++)
@@ -156,35 +131,41 @@ public class AgentDQN : MonoBehaviour
             }
 
             float[,] ss = new float[k,  input_size];
-            int[] sa_idx = new int[k];
+            float[,] sa = new float[k,  output_size];
             float[] sr = new float[k];
             float[,] ss1 = new float[k,  input_size];
             
             for (int i = 0; i < k; i++)
             {
                 sr[i] = br[result[i]];
-                sa_idx[i] = ba_idx[result[i]];
+                
                 for (int j = 0; j <  input_size; j++)
                 {
                     ss[i, j] = bs[result[i], j];
                     ss1[i, j] = bs1[result[i], j];
                 }
+                for (int j = 0; j <  output_size; j++)
+                {
+                    sa[i,j] = ba[result[i],j];
+                }
             }
-            float[,] q1 = net.Forward(ss1);
-            int[] max_q1 = maxi(q1);
-
-            float[,] q2 = target_net.Forward(ss1);
-
-            float[] q_target = new float[k];
-            for (int j = 0; j < k; j++)
+            float[,] target_q = ctgt_net.Forward(ss1,atgt_net.Forward(ss1, b));
+            
+            for (int i = 0; i < k; i++)
             {
-                q_target[j] = sr[j] +  gamma * q2[j, max_q1[j]];
+                target_q[i,0] = sr[i] +  gamma * target_q[i, 0];
             }
-            loss=net.Backward(ss, sa_idx, q_target,  max_grad_norm);
-
+            
+            cnet.Backward(ss,sa,target_q, max_grad_norm);
+            float[,] a_grads= cnet.Evaluate_action_grads(ss, anet.Forward(ss,  b));
+            anet.Backward(ss,a_grads, b, max_grad_norm);
             if (bi %  updater == 0)
             {
-                target_net = new Net_DQN(net);
+                ctgt_net = new CriticNet_DDPG(cnet);
+            }
+            if (bi % ( updater+1) == 0)
+            {
+                atgt_net = new ActorNet_DDPG(anet);
             }
 
              epsilon = Mathf.Max( epsilon *  decay,  min_decay);

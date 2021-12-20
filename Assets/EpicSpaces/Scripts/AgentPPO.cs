@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AgentPPO : MonoBehaviour
+public class AgentPPO 
 {
     ActorNet anet;
     CriticNet cnet;

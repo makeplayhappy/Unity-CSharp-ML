@@ -36,6 +36,26 @@ namespace Matr
             return c;
         }
 
+        public static float[,] DotB(  float[,] a,   float[,] b)
+        {
+            int a_length_0 = a.GetLength(0);
+            int b_length_0 = b.GetLength(0);
+            int b_length_1 = b.GetLength(1);
+
+            float[,] c = new float[a_length_0, b_length_1];
+            for (int i = 0; i < a_length_0; i++)
+            {
+                for (int k = 0; k < b_length_1; k++)
+                {
+                    for (int j = 0; j < b_length_0; j++)
+                    {
+                        c[i, k] += a[i, j] * b[j, k];
+                    }
+                }
+            }
+            return c;
+        }
+
         public static float[,] Transpose(  float[,] a)
         {
             float[,] b = new float[a.GetLength(1), a.GetLength(0)];
