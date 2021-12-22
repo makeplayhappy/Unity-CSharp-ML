@@ -73,29 +73,40 @@ using static Matr.Matrix;
         float[,] z1 = Add(Dot(s, w1), b1);
         float[,] h1 = Relu(z1);
         float[,] z2 = Add(Dot(h1, w2), b2);
-        float[,] mu = new float[z2.GetLength(0),z2.GetLength(1)];
-        for (int i = 0; i < z2.GetLength(0); i++)
+
+        int z2_length_0 = z2.GetLength(0);
+        int z2_length_1 = z2.GetLength(1);
+
+        float[,] mu = new float[z2_length_0,z2_length_1];
+        for (int i = 0; i < z2_length_0; i++)
         {
-            for (int j = 0; j < z2.GetLength(1); j++)
+            for (int j = 0; j < z2_length_1; j++)
             {
                 mu[i,j] = b * (Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1);
             }
         }
         float[,] z3 = Add(Dot(h1, w3), b3);
-        float[,] sigma = new float[z3.GetLength(0), z3.GetLength(1)];
-        for (int i = 0; i < z3.GetLength(0); i++)
+
+        int z3_length_0 = z3.GetLength(0);
+        int z3_length_1 = z3.GetLength(1);
+
+        float[,] sigma = new float[z3_length_0, z3_length_1];
+        for (int i = 0; i < z3_length_0; i++)
         {
-            for (int j = 0; j < z3.GetLength(1); j++)
+            for (int j = 0; j < z3_length_1; j++)
             {
                 sigma[i,j] = Mathf.Log(1 + Mathf.Exp(z3[i,j]));
             }
         }
+        int s_length_0 = s.GetLength(0);
+        int mu_length_1 = mu.GetLength(1);
 
-        float[,]a = new float[s.GetLength(0),mu.GetLength(1)];
-        alp = new float[s.GetLength(0), mu.GetLength(1)];
-        for (int i = 0; i < s.GetLength(0); i++)
+
+        float[,]a = new float[s_length_0,mu_length_1];
+        alp = new float[s_length_0, mu_length_1];
+        for (int i = 0; i < s_length_0; i++)
         {
-            for (int j = 0; j < mu.GetLength(1); j++)
+            for (int j = 0; j < mu_length_1; j++)
             {
                 a[0, j] = mu[i, j] + sigma[i, j] * Mathf.Sqrt(-2.0f * Mathf.Log(Random.Range(0.0f,1.0f))) * Mathf.Sin(2.0f * Mathf.PI * Random.Range(0.0f, 1.0f));
                 alp[0, j] = -((a[i, j] - mu[i, j]) * (a[i, j] - mu[i, j])) / (2 * sigma[i, j] * sigma[i, j]) - Mathf.Log(sigma[i, j]) - Mathf.Log(Mathf.Sqrt(2 * Mathf.PI));
@@ -110,34 +121,45 @@ using static Matr.Matrix;
         float[,] z1 = Add(Dot(s, w1), b1);
         float[,] h1 = Relu(z1);
         float[,] z2 = Add(Dot(h1, w2), b2);
-        float[,] mu = new float[z2.GetLength(0), z2.GetLength(1)];
-        for (int i = 0; i < z2.GetLength(0); i++)
+
+        int z2_length_0 = z2.GetLength(0);
+        int z2_length_1 = z2.GetLength(1);
+
+        float[,] mu = new float[z2_length_0, z2_length_1];
+
+        
+        for (int i = 0; i < z2_length_0; i++)
         {
-            for (int j = 0; j < z2.GetLength(1); j++)
+            for (int j = 0; j < z2_length_1; j++)
             {
                 mu[i, j] = b * (Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1);
             }
         }
         float[,] z3 = Add(Dot(h1, w3), b3);
-        float[,] sigma = new float[z3.GetLength(0), z3.GetLength(1)];
-        for (int i = 0; i < z3.GetLength(0); i++)
+        int z3_length_0 = z3.GetLength(0);
+        int z3_length_1 = z3.GetLength(1);
+
+        float[,] sigma = new float[z3_length_0, z3_length_1];
+        for (int i = 0; i < z3_length_0; i++)
         {
-            for (int j = 0; j < z3.GetLength(1); j++)
+            for (int j = 0; j < z3_length_1; j++)
             {
                 sigma[i, j] = Mathf.Log(1 + Mathf.Exp(z3[i, j]));
             }
         }
         int batch_size = s.GetLength(0);
 
-        float[,] alp = new float[batch_size, a.GetLength(1)];
-        float[,] ratio = new float[batch_size, a.GetLength(1)];
-        float[,] surr1 = new float[batch_size, a.GetLength(1)];
-        float[,] surr2 = new float[batch_size, a.GetLength(1)];
-        float[,] mu_derv = new float[batch_size, a.GetLength(1)];
-        float[,] sigma_derv = new float[batch_size, a.GetLength(1)];
+        int a_length_1 = a.GetLength(1);
+
+        float[,] alp = new float[batch_size, a_length_1];
+        float[,] ratio = new float[batch_size, a_length_1];
+        float[,] surr1 = new float[batch_size, a_length_1];
+        float[,] surr2 = new float[batch_size, a_length_1];
+        float[,] mu_derv = new float[batch_size, a_length_1];
+        float[,] sigma_derv = new float[batch_size, a_length_1];
         for (int i = 0; i < batch_size; i++)
         {
-            for (int j = 0; j < a.GetLength(1); j++)
+            for (int j = 0; j < a_length_1; j++)
             {
                 alp[i, j] = -((a[i, j] - mu[i, j]) * (a[i, j] - mu[i, j])) / (2 * sigma[i, j] * sigma[i, j]) - Mathf.Log(sigma[i, j]) - Mathf.Log(Mathf.Sqrt(2 * Mathf.PI));
                 ratio[i, j] = Mathf.Exp(alp[i, j] - olp[i, j]);
@@ -155,8 +177,8 @@ using static Matr.Matrix;
                     mu_derv[i, j] = -(b * adv[i] * Mathf.Exp(-(a[i, j] - b * (Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1)) * (a[i, j] - b * (Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1)) / (2 * sigma[i, j] * sigma[i, j]) - olp[i, j]) * (1 - ((Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1)) * ((Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1))) * (a[i, j] - b * (Mathf.Exp(2 * z2[i, j]) - 1) / (Mathf.Exp(2 * z2[i, j]) + 1))) / (Mathf.Sqrt(2 * Mathf.PI) * sigma[i, j] * sigma[i, j] * sigma[i, j]);
                     sigma_derv[i, j] = (adv[i] * Mathf.Exp(-(a[i, j] - mu[i, j]) * (a[i, j] - mu[i, j]) / (2 * Mathf.Log(Mathf.Exp(z3[i, j]) + 1) * Mathf.Log(Mathf.Exp(z3[i, j]) + 1)) + z3[i, j] - olp[i, j]) * (Mathf.Log(Mathf.Exp(z3[i, j]) + 1) * Mathf.Log(Mathf.Exp(z3[i, j]) + 1) - mu[i, j] * mu[i, j] + 2 * a[i, j] * mu[i, j] - a[i, j] * a[i, j])) / (Mathf.Sqrt(2 * Mathf.PI) * (Mathf.Exp(z3[i, j]) + 1) * (Mathf.Log(Mathf.Exp(z3[i, j]) + 1) * Mathf.Log(Mathf.Exp(z3[i, j]) + 1) * Mathf.Log(Mathf.Exp(z3[i, j]) + 1) * Mathf.Log(Mathf.Exp(z3[i, j]) + 1)));
 
-                    sigma_derv[i, j] /= a.GetLength(1);
-                    mu_derv[i, j] /= a.GetLength(1);
+                    sigma_derv[i, j] /= a_length_1;
+                    mu_derv[i, j] /= a_length_1;
                 }
 
             }

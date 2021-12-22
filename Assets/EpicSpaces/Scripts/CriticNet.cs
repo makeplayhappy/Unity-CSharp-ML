@@ -72,7 +72,7 @@ class CriticNet
         int batch_size = s.GetLength(0);
 
         float[,] d = new float[v.GetLength(0), v.GetLength(1)];
-        for (int i = 0; i < s.GetLength(0); i++)
+        for (int i = 0; i < batch_size; i++)
         {
             d[i, 0] = v[i, 0] - target_v[i];
             if (d[i, 0] < -1)
