@@ -9,8 +9,8 @@ using System.Collections;
 public class BallBalanceAgent : MonoBehaviour
 {
     AgentPPO ppo;
-    int batch_Capacity = 200;
-    int batch_size = 32;
+    int batch_Capacity = 128;
+    int batch_size = 16;
     int ppo_epoch = 10;
     int input_size = 8;
     int hidden_size = 80;
@@ -47,7 +47,7 @@ public class BallBalanceAgent : MonoBehaviour
 
     public Vector2 actionOut = Vector2.zero;
 
-    public float debug;
+    public bool debug = false;
 
 
     //cache all references at start so we're not doing expensive finds during play
@@ -74,6 +74,7 @@ public class BallBalanceAgent : MonoBehaviour
         
 
         
+        ppo.load();
 
         resetSimulation();
 
@@ -94,6 +95,15 @@ public class BallBalanceAgent : MonoBehaviour
             reward = -1f;
             resetSimulation();
             episodeCount++;
+        }
+
+        if( debug && Time.deltaTime > 0.1f){
+            Debug.Log("Long frame " + Time.deltaTime);
+            Debug.Break();
+        }
+
+        if (episodeCount > 100 && episodeCount % 50 == 0) {
+            save();
         }
     }
 
@@ -128,6 +138,10 @@ public class BallBalanceAgent : MonoBehaviour
         if( collisionInfo.transform.tag == "Player" ){
             isTouching = true;
         }
+    }
+
+    public void save(){
+        ppo.save();
     }
 
     private void learn(){

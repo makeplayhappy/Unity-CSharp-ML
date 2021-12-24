@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
+
 public class AgentPPO 
 {
     ActorNet anet;
@@ -169,5 +174,171 @@ public class AgentPPO
         }
         bi++;
         return loss;
+    }
+
+    public void save(){
+
+        Dictionary<string, float[,]> critic = cnet.GetStateDictionary();
+
+        FileStream fs = new FileStream("critic.dat", FileMode.Create, FileAccess.Write, FileShare.None);
+
+        // Construct a BinaryFormatter and use it to serialize the data to the stream.
+        IFormatter formatter = new BinaryFormatter();
+        try {
+
+            formatter.Serialize(fs, critic);
+
+        } catch (SerializationException e) {
+
+            Debug.Log("Failed to serialize. Reason: " + e.Message);
+            throw;
+
+        } finally {
+            fs.Close();
+        }
+
+        Dictionary<string, float[,]> actor = anet.GetStateDictionary();
+
+        fs = new FileStream("actor.dat", FileMode.Create, FileAccess.Write, FileShare.None);
+
+        // Construct a BinaryFormatter and use it to serialize the data to the stream.
+        try {
+
+            formatter.Serialize(fs, actor);
+
+        } catch (SerializationException e) {
+
+            Debug.Log("Failed to serialize. Reason: " + e.Message);
+            throw;
+
+        } finally {
+            fs.Close();
+        }
+
+        Dictionary<string, float[,]> ppo = GetStateDictionary();
+
+        fs = new FileStream("ppo.dat", FileMode.Create, FileAccess.Write, FileShare.None);
+
+        // Construct a BinaryFormatter and use it to serialize the data to the stream.
+        try {
+
+            formatter.Serialize(fs, ppo);
+
+        } catch (SerializationException e) {
+
+            Debug.Log("Failed to serialize. Reason: " + e.Message);
+            throw;
+
+        } finally {
+            fs.Close();
+        }
+
+    }
+
+    public Dictionary<string, float[,]> GetStateDictionary() {
+        Dictionary<string, float[,] > dict = new Dictionary<string,float[,]>();
+
+        dict.Add("bs", bs);
+        dict.Add("ba", ba);
+        
+        dict.Add("bs1", bs1);
+        dict.Add("bolp", bolp);
+
+        
+        //fake br
+        float[,] f_br = new float[br.Length,1];
+        for(int b = 0; b < br.Length; b++){
+            f_br[b,0] = br[b];
+        }
+        dict.Add("br", f_br);
+        return dict;
+
+    }
+
+    public void LoadStateDictionary( Dictionary<string, float[,] > dict ){
+
+        float[,] value = new float[0,0];
+
+        if (dict.TryGetValue("bs", out value) ){
+            bs = value;
+        }
+        if (dict.TryGetValue("ba", out value) ){
+           ba = value;
+        }
+        if (dict.TryGetValue("br", out value) ){
+            float[] f_br = new float[ value.GetLength(0) ];
+            for(int b = 0; b < value.GetLength(0); b++){
+                f_br[b] = value[b,0];
+            }
+           br = f_br;
+        }
+        if (dict.TryGetValue("bs1", out value) ){
+           bs1 = value;
+        }
+        if (dict.TryGetValue("bolp", out value) ){
+           bolp = value;
+        }
+    }
+
+    public void load(){
+
+        Dictionary<string, float[,]> critic = null;
+
+        // Open the file containing the data that you want to deserialize.
+        FileStream fs;
+        IFormatter formatter = new BinaryFormatter();
+        try {
+            fs = new FileStream("critic.dat", FileMode.Open);
+
+            // Deserialize the hashtable from the file and
+            // assign the reference to the local variable.
+            critic = (Dictionary<string, float[,]>) formatter.Deserialize(fs);
+            fs.Close();
+            cnet.LoadStateDictionary(critic);
+
+        } catch (SerializationException e) {
+            Debug.Log("Failed to deserialize. Reason: " + e.Message);
+            throw;
+        } 
+
+        Dictionary<string, float[,]> actor = null;
+
+        // Open the file containing the data that you want to deserialize.
+        try {
+            fs = new FileStream("actor.dat", FileMode.Open);
+            // Deserialize the hashtable from the file and
+            // assign the reference to the local variable.
+            actor = (Dictionary<string, float[,]>) formatter.Deserialize(fs);
+            fs.Close();
+            anet.LoadStateDictionary(actor);
+
+        } catch (SerializationException e) {
+            Debug.Log("Failed to deserialize. Reason: " + e.Message);
+            throw;
+        } 
+
+        Dictionary<string, float[,]> ppo = null;
+
+        // Open the file containing the data that you want to deserialize.
+        try {
+            fs = new FileStream("ppo.dat", FileMode.Open);
+            // Deserialize the hashtable from the file and
+            // assign the reference to the local variable.
+            ppo = (Dictionary<string, float[,]>) formatter.Deserialize(fs);
+            fs.Close();
+            LoadStateDictionary(ppo);
+
+        } catch (SerializationException e) {
+            Debug.Log("Failed to deserialize. Reason: " + e.Message);
+            throw;
+        } 
+
+
+        // To prove that the table deserialized correctly,
+        // display the key/value pairs.
+        //foreach (DictionaryEntry de in critic) {
+        //    Debug.Log(de.Key + " " + de.Value);
+        //}
+
     }
 }

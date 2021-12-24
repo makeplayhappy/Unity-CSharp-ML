@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 using static Matr.Matrix;
 class CriticNet
     {
@@ -108,6 +109,71 @@ class CriticNet
         Adam(b2, db2, mb2, vb2, batch_size, beta1, beta2, eps, lr, t);
 
         return Sum_total_norm(d, new float[1, d.GetLength(1)]) / s.GetLength(0);
+
+    }
+
+    public Dictionary<string, float[,]> GetStateDictionary() {
+        Dictionary<string, float[,] > dict = new Dictionary<string,float[,]>();
+
+        dict.Add("w1", w1);
+        dict.Add("w2", w2);
+        dict.Add("b1", b1);
+        dict.Add("b2", b2);
+
+        dict.Add("m1", m1);
+        dict.Add("v1", v1);
+        dict.Add("m2", m2);
+        dict.Add("v2", v2);
+
+        dict.Add("mb1", mb1);
+        dict.Add("vb1", vb1);
+        dict.Add("mb2", mb2);
+        dict.Add("vb2", vb2);
+        return dict;
+
+    }
+
+    public void LoadStateDictionary( Dictionary<string, float[,] > dict ){
+
+        float[,] value = new float[0,0];
+        if (dict.TryGetValue("w1", out value) ){
+            w1 = value;
+        }
+        if (dict.TryGetValue("w2", out value) ){
+            w2 = value;
+        }
+        if (dict.TryGetValue("b1", out value) ){
+            b1 = value;
+        }
+        if (dict.TryGetValue("b2", out value) ){
+           b2 = value;
+        }
+ 
+        if (dict.TryGetValue("m1", out value) ){
+           m1 = value;
+        }
+        if (dict.TryGetValue("v1", out value) ){
+           v1 = value;
+        }
+        if (dict.TryGetValue("m2", out value) ){
+           m2 = value;
+        }
+        if (dict.TryGetValue("v2", out value) ){
+           v2 = value;
+        }
+
+        if (dict.TryGetValue("mb1", out value) ){
+           mb1 = value;
+        }
+        if (dict.TryGetValue("vb1", out value) ){
+           vb1 = value;
+        }
+        if (dict.TryGetValue("mb2", out value) ){
+           mb2 = value;
+        }
+        if (dict.TryGetValue("vb2", out value) ){
+           vb2 = value;
+        }
 
     }
 }
