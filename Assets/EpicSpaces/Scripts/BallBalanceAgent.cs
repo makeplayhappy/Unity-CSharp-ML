@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 using System.Collections;
+using UnityEngine.Profiling;
 
 
 //Note I've added a few public variables - so they are visible in the inspector - not so they are script accessible
@@ -93,6 +94,7 @@ public class BallBalanceAgent : MonoBehaviour
         //check out of bounds
 		if (positionDelta.y < -1.5f || Mathf.Abs(positionDelta.x) > 3.8f || Mathf.Abs(positionDelta.z) > 3.8f){
             reward = -1f;
+            learn();
             resetSimulation();
             episodeCount++;
         }
@@ -101,7 +103,8 @@ public class BallBalanceAgent : MonoBehaviour
     void FixedUpdate(){
 
         if( Time.fixedTime > nextDecisionTime && isTouching){
-            nextDecisionTime = Time.fixedTime + timePerDecision;
+            //distance from center reward
+            reward = Mathf.Clamp(0.45f * (2.25f - Mathf.Sqrt(positionDelta.x*positionDelta.x+positionDelta.z*positionDelta.z)), 0f , 0.99f);
             learn();
             
         }
@@ -132,6 +135,9 @@ public class BallBalanceAgent : MonoBehaviour
     }
 
     private void learn(){
+        Profiler.BeginSample("Agent:Learn");
+        nextDecisionTime = Time.fixedTime + timePerDecision;
+
         float losslabel = 0;
         float[,] s = new float[1, input_size];
 
@@ -139,7 +145,7 @@ public class BallBalanceAgent : MonoBehaviour
         s[0, 0] = Mathf.Clamp(transform.rotation.x, -1f, 1f);
         s[0, 1] = Mathf.Clamp(transform.rotation.z, -1f, -1f);
 
-        Vector3 normalisedPositionDelta = positionDelta * 0.3333f; // normalise to bounds is 3 so multiply by 1/3 = 0.3333
+        Vector3 normalisedPositionDelta = positionDelta * 0.33334f; // normalise to bounds is 3 so multiply by 1/3 = 0.333
         s[0, 2] = Mathf.Clamp(positionDelta.x, -1f, 1f);
         s[0, 3] = Mathf.Clamp(positionDelta.y, -1f, 1f);
         s[0, 4] = Mathf.Clamp(positionDelta.z, -1f, 1f);
@@ -151,7 +157,9 @@ public class BallBalanceAgent : MonoBehaviour
         s[0, 7] = Mathf.Clamp(normalisedVelo.z, -1f, 1f);
 
         float[,] alp;
+        Profiler.BeginSample("Agent:Learn:Predict");
         float[,] act = ppo.Predict(s, out alp, b);
+        Profiler.EndSample();
 
         actionOut[0] = act[0,0];
         actionOut[1] = act[0,1];
@@ -166,17 +174,16 @@ public class BallBalanceAgent : MonoBehaviour
         lerpAmount = 0f;
         startRotation = transform.rotation;
         
-        //distance from center reward
-        reward = 0.05f + Mathf.Clamp(0.1f * (3f - Mathf.Sqrt(positionDelta.x*positionDelta.x+positionDelta.z*positionDelta.z)), 0f , 0.5f);
-        //reward = 0.1f;
 
 		if (istraining == true) {
+            Profiler.BeginSample("Agent:Learn:Train");
             float loss = ppo.Train(s, act, reward, alp);
+            Profiler.EndSample();
             if (loss != 0){
                 losslabel = loss * loss;
             }
         }
         infoText.text = "reward : "+reward + "\nloss : " + losslabel+ "\nepisode count : " + episodeCount + "\nTime : "+ Time.time;
-
+        Profiler.EndSample();
     }
 }
