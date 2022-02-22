@@ -59,7 +59,8 @@ public class BallBalanceAgent : MonoBehaviour
 
         nextDecisionTime = Time.fixedTime + timePerDecision;
 
-        ppo = new AgentPPO(batch_Capacity,
+        ppo = new AgentPPO(
+            batch_Capacity,
             batch_size,
             ppo_epoch,
             input_size,
@@ -155,8 +156,8 @@ public class BallBalanceAgent : MonoBehaviour
         actionOut[0] = act[0,0];
         actionOut[1] = act[0,1];
 
-		float x = Mathf.Clamp(act[0,0],-b,b);
-		float z = Mathf.Clamp(act[0,1],-b,b);
+		float x = Mathf.Clamp(actionOut[0],-b,b);
+		float z = Mathf.Clamp(actionOut[1],-b,b);
 
         //we will set the wanted action and pick this up on the update function to act as a simple tween / lerp
         float degreeRotationRange = 8f;
